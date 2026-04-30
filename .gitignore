@@ -216,3 +216,18 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# DVC
+.dvc/cache
+.dvc/tmp
+.dvc/log
+.dvc/config.local
+
+# /data
+data/**/*
+!data/**/*.dvc
+!data/**/.gitignore
+
+# MLflow
+mlruns.db
+mlruns/
