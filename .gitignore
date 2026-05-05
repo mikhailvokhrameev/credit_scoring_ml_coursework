@@ -232,3 +232,5 @@ data/**/*
 mlruns.db
 mlruns/
 *.db
+
+.DS_Store
