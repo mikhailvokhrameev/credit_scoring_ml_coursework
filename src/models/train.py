@@ -8,9 +8,9 @@ from pathlib import Path
 
 # Models import
 from src.models.logreg_model import LogRegModel
-#from src.models.lgbm_model import LGBMModel
-# from src.models.xgb_model import XGBModel 
-# from src.models.catboost_model import CatBoostModel
+from src.models.lgbm_model import LGBMModel
+from src.models.xgb_model import XGBModel 
+from src.models.catboost_model import CatBoostModel
 
 from src.models.tuner import OptunaHPOTuner
 from src.evaluation.metrics import compute_all_metrics
@@ -20,9 +20,9 @@ logger = logging.getLogger(__name__)
 
 MODEL_REGISTRY = {
     "logreg": LogRegModel,
-    #"lgbm": LGBMModel,
-    # "xgb": XGBModel,
-    # "catboost": CatBoostModel
+    "lgbm": LGBMModel,
+    "xgb": XGBModel,
+    "catboost": CatBoostModel
 }
 
 def parse_args():
@@ -67,7 +67,7 @@ def main():
 
         tuner = OptunaHPOTuner(
             model_class=ModelClass,
-            db_path="sqlite:///optuna_tuning.db",
+            db_path="sqlite:///optuna.db",
             study_name=f"{model_name}_hyperopt"
         )
         
