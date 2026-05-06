@@ -2,44 +2,38 @@ import pandas as pd
 import numpy as np
 import mlflow.sklearn
 from typing import Dict, Any
-from optbinning import BinningProcess
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
-from sklearn.feature_selection import VarianceThreshold
 from src.models.base import BaseModel
+from sklearn.impute import SimpleImputer
 
 
 class LogRegModel(BaseModel):
     """
-    Baseline interpretable model serving as a standard scorecard.
-    Pipeline: OptBinning (WoE + IV Selection) -> Variance Filter -> Scaler -> LogReg.
+    Fast Baseline Logistic Regression.
+    Pipeline: Imputer -> Scaler -> LogReg.
     """
     def fit(self, X: pd.DataFrame, y: pd.Series, eval_set=None) -> 'LogRegModel':
+        X = X.copy()
+        numeric_cols = X.select_dtypes(include=['int64', 'int32', 'integer']).columns
+        X[numeric_cols] = X[numeric_cols].astype('float64')
+        
         self.features_ = list(X.columns) # Save features list
         
-        selection_criteria = {
-            "iv": {"min": 0.02, "max": 1.0}
-        }
-        
-        binning_process = BinningProcess(
-            variable_names=self.features_,
-            max_n_prebins=50,
-            min_prebin_size=0.01,
-            min_bin_size=0.05,
-            selection_criteria=selection_criteria
-        )
+        # Choose solver based on penalty
+        penalty = self.params.get('penalty', 'l2')
+        solver = 'saga' if penalty == 'l1' else 'lbfgs'
         
         pipeline_steps =[
-            ('binning', binning_process),
-            ('variance_filter', VarianceThreshold(threshold=0.0)), # Filter out constant features after WoE transformation
+            ('imputer', SimpleImputer(strategy='median')),
             ('scaler', StandardScaler()),
             ('clf', LogisticRegression(
-                class_weight=None,
-                solver='saga',
-                penalty=self.params.get('penalty', 'l2'),
+                class_weight='balanced',
+                solver=solver,
+                penalty=penalty,
                 C=self.params.get('C', 1.0),
-                max_iter=1000,
+                max_iter=500,
                 n_jobs=-1,
                 random_state=42
             ))
@@ -56,10 +50,7 @@ class LogRegModel(BaseModel):
         return self.model.predict_proba(X)[:, 1]
 
     def get_feature_importance(self) -> pd.DataFrame:
-        """
-        Extracts feature importance based on absolute values of Logistic Regression coefficients.
-        Properly maps feature names through OptBinning and VarianceThreshold.
-        """
+        """Extracts coefficients from Logistic Regression"""
         clf = self.model.named_steps['clf']
         selected_features = self.model[:-1].get_feature_names_out(self.features_)
 
@@ -71,5 +62,7 @@ class LogRegModel(BaseModel):
     def get_optuna_space(self, trial) -> Dict[str, Any]:
         return {
             "C": trial.suggest_float("C", 1e-4, 10.0, log=True),
-            "penalty": trial.suggest_categorical("penalty", ["l1", "l2"])
+            "penalty": trial.suggest_categorical("penalty", ["l2"])
         }
+        
+        
