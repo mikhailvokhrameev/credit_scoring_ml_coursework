@@ -91,7 +91,7 @@ class BaseModel(abc.ABC):
             mlflow.log_metrics({f"fold_{fold+1}_auc": auc, f"fold_{fold+1}_pr_auc": pr_auc})
 
         mean_auc, std_auc = np.mean(fold_auc), np.std(fold_auc)
-        logger.info(f"CV Complete | Mean ROC AUC: {mean_auc:.4f} � {std_auc:.4f}")
+        logger.info(f"CV Complete | mean_auc: {mean_auc:.4f}, std_auc: {std_auc:.4f}")
         
         mlflow.log_metrics({
             "cv_mean_roc_auc": mean_auc,
