@@ -53,9 +53,14 @@ class XGBModel(BaseModel):
             pos_ratio = (len(y) - y.sum()) / y.sum()
             self.params['scale_pos_weight'] = pos_ratio
             
-        self.params.setdefault('device', 'cuda')
-        self.params.setdefault('tree_method', 'gpu_hist')
-        self.params.setdefault('predictor', 'gpu_predictor')
+        device = self.params.get('device', 'cpu')
+        
+        if device == 'gpu':
+            self.params.setdefault('tree_method', 'gpu_hist')
+            self.params.setdefault('predictor', 'gpu_predictor')
+        else:
+            self.params['tree_method'] = 'hist'
+            self.params['device'] = 'cpu'
 
         self.model = xgb.XGBClassifier(**self.params, early_stopping_rounds=100 if eval_set else None)
         

@@ -82,22 +82,23 @@ class LGBMModel(BaseModel):
 
 
     def get_optuna_space(self, trial) -> Dict[str, Any]:
-        return {
+        
+        device = self.params.get('device', 'cpu')
+        
+        space = {
             "objective": "binary",
             "metric": "auc",
             "boosting_type": "gbdt",
-            "device_type": "gpu",
-            "gpu_platform_id": 0,
-            "gpu_device_id": 0,
-            "max_bin": 255,
+            "device_type": "gpu" if device == "gpu" else "cpu",
             "n_estimators": trial.suggest_int("n_estimators", 200, 2000),
             "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
             "num_leaves": trial.suggest_int("num_leaves", 31, 255),
-            "min_child_samples": trial.suggest_int("min_child_samples", 20, 500),
-            "subsample": trial.suggest_float("subsample", 0.5, 1.0),
-            "colsample_bytree": trial.suggest_float("colsample_bytree", 0.5, 1.0),
-            "reg_alpha": trial.suggest_float("reg_alpha", 1e-8, 10.0, log=True),
-            "reg_lambda": trial.suggest_float("reg_lambda", 1e-8, 10.0, log=True),
             "random_state": 42,
-            "n_jobs": -1
         }
+        
+        if device == "gpu":
+            space.update({
+                "gpu_platform_id": 0,
+                "gpu_device_id": 0,
+        })
+        return space

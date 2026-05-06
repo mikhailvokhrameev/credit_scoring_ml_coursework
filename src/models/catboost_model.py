@@ -51,8 +51,11 @@ class CatBoostModel(BaseModel):
         # Identify categorical columns dynamically to leverage CatBoost's native powers
         cat_features =[col for col in X.columns if X[col].dtype.name in ['object', 'category']]
         
-        self.params.setdefault('task_type', 'GPU')
-        self.params.setdefault('devices', '0')
+        device = self.params.get('device', 'cpu').upper()
+        self.params['task_type'] = device
+        
+        if device == 'GPU':
+            self.params.setdefault('devices', '0')
         
         self.params.setdefault('auto_class_weights', 'Balanced')
         self.params.setdefault('verbose', False)

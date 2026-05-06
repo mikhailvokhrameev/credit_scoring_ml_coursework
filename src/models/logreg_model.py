@@ -7,13 +7,16 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from src.models.base import BaseModel
 from sklearn.impute import SimpleImputer
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class LogRegModel(BaseModel):
     """
     Fast Baseline Logistic Regression.
     Pipeline: Imputer -> Scaler -> LogReg.
-    """
+    """     
     def fit(self, X: pd.DataFrame, y: pd.Series, eval_set=None) -> 'LogRegModel':
         X = X.copy()
         numeric_cols = X.select_dtypes(include=['int64', 'int32', 'integer']).columns
@@ -33,7 +36,7 @@ class LogRegModel(BaseModel):
                 solver=solver,
                 penalty=penalty,
                 C=self.params.get('C', 1.0),
-                max_iter=500,
+                max_iter=1000,
                 n_jobs=-1,
                 random_state=42
             ))
@@ -62,7 +65,8 @@ class LogRegModel(BaseModel):
     def get_optuna_space(self, trial) -> Dict[str, Any]:
         return {
             "C": trial.suggest_float("C", 1e-4, 10.0, log=True),
-            "penalty": trial.suggest_categorical("penalty", ["l2"])
+            "penalty": trial.suggest_categorical("penalty", ["l2"]),
+            "device": "cpu"
         }
         
         
