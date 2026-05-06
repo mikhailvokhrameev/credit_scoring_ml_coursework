@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import mlflow.xgboost
 import re
-from typing import Dict, Any, Tuple, Optional
+from typing import Dict, Any
 from src.models.base import BaseModel
 
 
@@ -52,8 +52,10 @@ class XGBModel(BaseModel):
         if 'scale_pos_weight' not in self.params:
             pos_ratio = (len(y) - y.sum()) / y.sum()
             self.params['scale_pos_weight'] = pos_ratio
-
-        self.params.setdefault('tree_method', 'hist')
+            
+        self.params.setdefault('device', 'cuda')
+        self.params.setdefault('tree_method', 'gpu_hist')
+        self.params.setdefault('predictor', 'gpu_predictor')
 
         self.model = xgb.XGBClassifier(**self.params, early_stopping_rounds=100 if eval_set else None)
         

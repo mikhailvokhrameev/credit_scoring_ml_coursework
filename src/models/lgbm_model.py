@@ -34,32 +34,36 @@ class LGBMModel(BaseModel):
         return X[self.features_]
     
     
-    def fit(self, X: pd.DataFrame, y: pd.Series, eval_set = None) -> 'LGBMModel':
-         # Sanitize features
+    def fit(self, X: pd.DataFrame, y: pd.Series, eval_set=None) -> 'LGBMModel':
         X = self._sanitize_columns(X)
-        
+
         if eval_set is not None:
-            eval_set = (
-                self._sanitize_columns(eval_set[0]),
-                eval_set[1]
-            )
+            X_val = self._sanitize_columns(eval_set[0])
+            y_val = eval_set[1]
+            eval_data = [(X_val, y_val)]
+        else:
+            eval_data = None
 
         self.features_ = list(X.columns)
+
         self.model = lgb.LGBMClassifier(**self.params)
 
         callbacks = []
-        eval_data = None
 
-        if eval_set is not None:
-            eval_data = [(eval_set[0], eval_set[1])]
-            # Modern callback format for LightGBM
-            callbacks.append(lgb.early_stopping(stopping_rounds=100, verbose=False))
-            callbacks.append(lgb.log_evaluation(period=0))
-        
+        if eval_data is not None:
+            callbacks.append(
+                lgb.early_stopping(
+                    stopping_rounds=100,
+                    verbose=False
+                )
+            )
+
+            callbacks.append(lgb.log_evaluation(period=50))
+
         self.model.fit(X, y, eval_set=eval_data, eval_metric="auc", callbacks=callbacks)
 
         return self
-
+    
 
     def predict_proba(self, X: pd.DataFrame) -> np.ndarray:
         # Sanitize and align internally before predicting
@@ -82,6 +86,10 @@ class LGBMModel(BaseModel):
             "objective": "binary",
             "metric": "auc",
             "boosting_type": "gbdt",
+            "device_type": "gpu",
+            "gpu_platform_id": 0,
+            "gpu_device_id": 0,
+            "max_bin": 255,
             "n_estimators": trial.suggest_int("n_estimators", 200, 2000),
             "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
             "num_leaves": trial.suggest_int("num_leaves", 31, 255),
