@@ -82,12 +82,11 @@ class OptunaHPOTuner:
 
         logger.info(f"Best Trial: {self.study.best_trial.number} | AUC: {self.study.best_value:.4f}")
         
-        with mlflow.start_run(run_name=f"HPO_Summary_{self.model_class.__name__}"):
-            mlflow.log_params({f"best_{k}": v for k, v in self.study.best_params.items()})
-            mlflow.log_metric("best_cv_auc", self.study.best_value)
+        mlflow.log_params({f"best_{k}": v for k, v in self.study.best_params.items()})
+        mlflow.log_metric("best_cv_auc", self.study.best_value)
             
-            try:
-                importances = optuna.importance.get_param_importances(self.study)
-                mlflow.log_dict(importances, "param_importances.json")
-            except Exception as e:
-                logger.warning(f"Could not calculate param importances: {str(e)}")
+        try:
+            importances = optuna.importance.get_param_importances(self.study)
+            mlflow.log_dict(importances, "param_importances.json")
+        except Exception as e:
+            logger.warning(f"Could not calculate param importances: {str(e)}")
