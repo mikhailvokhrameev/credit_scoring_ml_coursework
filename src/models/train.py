@@ -5,6 +5,7 @@ import joblib
 import mlflow
 import logging
 from pathlib import Path
+import numpy as np
 
 # Models import
 from src.models.logreg_model import LogRegModel
@@ -54,7 +55,9 @@ def main():
 
     feature_cols = [c for c in selected_features if c in df.columns]
 
-    X = df[feature_cols]
+    X = df[feature_cols].copy()
+    X = X.astype(np.float64)
+    
     y = df["TARGET"]
 
     logger.info(f"Data shape: {X.shape}, target rate: {y.mean():.4f}")
