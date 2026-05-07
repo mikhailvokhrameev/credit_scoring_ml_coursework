@@ -1,7 +1,6 @@
 import catboost as cb
 import pandas as pd
 import numpy as np
-import mlflow
 import re
 from typing import Dict, Any, Tuple, Optional
 from src.models.base import BaseModel
@@ -48,27 +47,35 @@ class CatBoostModel(BaseModel):
 
         self.features_ = list(X.columns)
         
-        # Identify categorical columns dynamically to leverage CatBoost's native powers
-        cat_features =[col for col in X.columns if X[col].dtype.name in ['object', 'category']]
+        # Identify categorical columns
+        cat_features = [col for col in X.columns if X[col].dtype.name in ['object', 'category']]
         
-        device = self.params.get('device', 'cpu').upper()
-        self.params['task_type'] = device
+        # --- FIX: Create a local copy of params to avoid mutating the original dict ---
+        fit_params = self.params.copy()
         
+        # --- FIX: Handle device logic without mutating self.params ---
+        device = fit_params.pop('device', 'cpu').upper()
         if device == 'GPU':
-            self.params.setdefault('devices', '0')
+            fit_params['task_type'] = 'GPU'
+            fit_params.setdefault('devices', '0')
+        else:
+            fit_params['task_type'] = 'CPU'
         
-        self.params.setdefault('auto_class_weights', 'Balanced')
-        self.params.setdefault('verbose', False)
-        self.params.setdefault('allow_writing_files', False)
+        fit_params.setdefault('auto_class_weights', 'Balanced')
+        fit_params.setdefault('verbose', False)
+        fit_params.setdefault('allow_writing_files', False)
         
-        self.model = cb.CatBoostClassifier(**self.params)
+        # Initialize model with the local fit_params
+        self.model = cb.CatBoostClassifier(**fit_params)
         
         eval_data = (eval_set[0], eval_set[1]) if eval_set else None
         
-        # Manual parameter logging as MLflow CatBoost autologging is sometimes unstable in CV
-        mlflow.log_params(self.params)
-        
-        self.model.fit(X, y, eval_set=eval_data, cat_features=cat_features, early_stopping_rounds=100 if eval_set else None)
+        self.model.fit(
+            X, y, 
+            eval_set=eval_data, 
+            cat_features=cat_features, 
+            early_stopping_rounds=100 if eval_set else None
+        )
         return self
 
 
