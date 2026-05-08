@@ -34,6 +34,12 @@ class XGBModel(BaseModel):
             X[col] = 0
 
         return X[self.features_]
+    
+    
+    def transform(self, X):
+        X = self._sanitize_columns(X)
+        X = self._align_features(X)
+        return X
 
 
     def fit(self, X: pd.DataFrame, y: pd.Series, eval_set = None) -> 'XGBModel':
@@ -41,10 +47,7 @@ class XGBModel(BaseModel):
         X = self._sanitize_columns(X)
         
         if eval_set is not None:
-            eval_set = (
-                self._sanitize_columns(eval_set[0]),
-                eval_set[1]
-            )
+            eval_set = (self._sanitize_columns(eval_set[0]), eval_set[1])
 
         self.features_ = list(X.columns)
         
