@@ -207,10 +207,6 @@ def main():
             joblib.dump(final_model, MODEL_PATH)
             mlflow.log_artifact(str(MODEL_PATH), artifact_path="model_backup")
 
-            # Thresholds
-            logger.info("Logging thresholds...")
-            mlflow.log_dict(thresholds, "inference/thresholds.json")
-
             mlflow.log_params({
                 "fn_cost": 10.0,
                 "fp_cost": 1.0
