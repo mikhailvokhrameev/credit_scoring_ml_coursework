@@ -1,6 +1,6 @@
-# Пайплайн обучения моделей кредитного скоринга
+# Credit Scoring Model Training Pipeline
 
-Данный репозиторий содержит проект по разработке полного ML-пайплайна кредитного скоринга на датасете **Home Credit Default Risk**: агрегация семи реляционных таблиц, инженерия 300 признаков, обучение четырёх моделей с байесовской оптимизацией, трекинг в MLflow и интерпретация через SHAP. В рамках проекта также **сформулированы и проверены 5 статистических гипотез** о природе данных и эффективности методов обучения.
+This repository contains a project for developing an end-to-end ML pipeline for credit scoring based on the **Home Credit Default Risk** dataset: aggregation of seven relational tables, engineering of 300 features, training of four models with Bayesian optimization, tracking in MLflow, and interpretation via SHAP. As part of the project, **5 statistical hypotheses were also formulated and tested** regarding the nature of the data and the effectiveness of training methods.
 
 <div align="center">
 <img src="https://github.com/user-attachments/assets/504ad478-e1fe-4ab6-a9ac-82d41de85a78" width="250"><br>
@@ -8,108 +8,108 @@
 
 ---
 
-## Краткое описание
+## Brief Description
 
-Проект решает задачу бинарной классификации — прогнозирование вероятности дефолта заёмщика, то есть вероятности того, что клиент допустит просрочку платежа дольше 90 дней в течение 12-месячного горизонта. На выходе модель возвращает оценку `f(x) ∈ [0, 1]`, которая служит основой для решения об одобрении кредита.
+The project solves a binary classification problem — predicting the probability of borrower default, which is the likelihood that a client will delay payment by more than 90 days within a 12-month horizon. At the output, the model returns an estimate `f(x) ∈ [0, 1]`, which serves as the basis for the credit approval decision.
 
-Главные особенности:
+Key features:
 
-- **Многомодульная архитектура** с разделением на загрузку данных, предобработку, инженерию признаков, обучение и интерпретацию.
-- **Воспроизводимость на банковском уровне**: стратифицированная Out-of-Fold кросс-валидация, трекинг каждого запуска в MLflow, версионирование моделей в Model Registry.
-- **Регуляторная интерпретируемость**: SHAP-объяснения глобального и локального уровня, без логики «чёрного ящика».
-- **Унифицированный CLI**: запуск полного цикла обучения любой модели одной командой.
-- **Проверка 5 гипотез**: статистическое исследование природы данных, ценности признаков и эффективности методов обучения.
-
----
-
-## Мотивация
-
-Мне хотелось построить полный ML-пайплайн: от сырых данных до версионированных моделей в реестре, с воспроизводимым обучением и production-ready артефактами.
-
-В ходе работы я получил опыт:
-
-- проектирования **модульного feature engineering** поверх реляционной базы из 7+ таблиц с агрегацией транзакционной истории в единый вектор признаков на заёмщика;
-- контроля **утечек данных** при подготовке обучающей и тестовой выборок;
-- построения **унифицированного ООП-пайплайна** на абстрактном базовом классе, куда любой новый алгоритм добавляется одним классом-наследником;
-- **байесовской оптимизации гиперпараметров** через Optuna;
-- организации **MLOps-инфраструктуры**: трекинг экспериментов, логирование артефактов и реестр моделей в MLflow;
-- **интерпретации моделей** через SHAP и формулирования бизнес-объяснений отказа в кредите;
-- работы с **сильным дисбалансом классов**.
+- **Multi-module architecture** separating data loading, preprocessing, feature engineering, training, and interpretation.
+- **Bank-grade reproducibility**: stratified Out-of-Fold cross-validation, tracking of every run in MLflow, model versioning in Model Registry.
+- **Regulatory interpretability**: global and local SHAP explanations, avoiding "black box" logic.
+- **Unified CLI**: launching the full training cycle of any model with a single command.
+- **Testing 5 hypotheses**: statistical study of data nature, feature value, and training method efficiency.
 
 ---
 
-## Стек технологий
+## Motivation
+
+I wanted to build a complete ML pipeline: from raw data to versioned models in the registry, with reproducible training and production-ready artifacts.
+
+During this work, I gained experience in:
+
+- designing **modular feature engineering** on top of a relational database of 7+ tables with transaction history aggregation into a single feature vector per borrower;
+- controlling **data leakage** when preparing training and test sets;
+- building a **unified OOP pipeline** based on an abstract base class, where any new algorithm is added with a single subclass;
+- **Bayesian hyperparameter optimization** via Optuna;
+- organizing **MLOps infrastructure**: experiment tracking, artifact logging, and model registry in MLflow;
+- **model interpretation** via SHAP and formulating business explanations for credit refusal;
+- working with **severe class imbalance**.
+
+---
+
+## Tech Stack
 
 - **Python 3.10**
-- **pandas, ydata-profiling, kaggle** — данные и EDA
+- **pandas, ydata-profiling, kaggle** — data and EDA
 - **scikit-learn, LightGBM, XGBoost, CatBoost** — ML
-- **optuna, optuna-dashboard** — оптимизация гиперпараметров
-- **mlflow** — трекинг экспериментов
-- **shap** — интерпретируемость (XAI)
-- **matplotlib, seaborn** — визуализация
-- **jupyterlab, nbconvert, quarto** — ноутбуки и отчёты
-- **joblib** — сериализация моделей
+- **optuna, optuna-dashboard** — hyperparameter optimization
+- **mlflow** — experiment tracking
+- **shap** — interpretability (XAI)
+- **matplotlib, seaborn** — visualization
+- **jupyterlab, nbconvert, quarto** — notebooks and reports
+- **joblib** — model serialization
 
 ---
 
-## Возможности проекта
+## Project Features
 
-#### Загрузка и кэширование данных
-При первом обращении CSV конвертируются в бинарный Apache Parquet, что резко ускоряет последующие итерации при работе с таблицами в миллионы строк.
+#### Data Loading and Caching
+Upon first access, CSV files are converted into binary Apache Parquet format, significantly speeding up subsequent iterations when working with tables containing millions of rows.
 
-#### Предобработка без утечек
-Кодировщики и группировка редких категорий в «Other» подбираются строго по обучающей выборке и переносятся на тест без переобучения.
+#### Leakage-Free Preprocessing
+Encoders and grouping of rare categories into "Other" are fitted strictly on the training sample and applied to test without data leakage.
 
-#### Модульная инженерия признаков
-Каждый источник данных обрабатывается отдельно: создаются финансовые коэффициенты, поведенческие индикаторы и статистические агрегаты. Финальный пайплайн объединяет их через left-join по заёмщику и отбирает топ-300 признаков через Ridge-регрессию.
+#### Modular Feature Engineering
+Each data source is processed separately: financial ratios, behavioral indicators, and statistical aggregates are generated. The final pipeline merges them via left-join by borrower ID and selects the top 300 features using Ridge regression.
 
-#### Унифицированное обучение моделей
-Абстрактный базовый класс задаёт единый контракт, на основе которого реализованы четыре модели: Logistic Regression, LightGBM, XGBoost и CatBoost. Добавить новый алгоритм — значит написать один класс-наследник.
+#### Unified Model Training
+An abstract base class establishes a single contract upon which four models are implemented: Logistic Regression, LightGBM, XGBoost, and CatBoost. Adding a new algorithm simply requires writing one subclass.
 
-#### Байесовская оптимизация гиперпараметров
-Optuna максимизирует средний ROC-AUC по фолдам; история trial'ов хранится в `optuna.db` (SQLite), что позволяет возобновлять поиск.
+#### Bayesian Hyperparameter Optimization
+Optuna maximizes the mean ROC-AUC across folds; trial history is stored in `optuna.db` (SQLite), enabling search resumption.
 
-#### Трекинг экспериментов в MLflow
-Вложенная структура запусков: родительский Run → дочерние HPO и Final_Production. Логируются параметры, метрики, SHAP-отчёты и дампы моделей. Лучшие кандидаты переносятся в Model Registry.
+#### Experiment Tracking in MLflow
+Nested run structure: parent Run → child HPO and Final_Production. Parameters, metrics, SHAP reports, and model dumps are logged. The best candidates are moved to the Model Registry.
 
 <div align="center">
 <img src="https://github.com/user-attachments/assets/ac4c1d9d-8be4-4f1f-b32f-f6e79e03962c"><br>
-<em>Панель MLFlow UI</em>
+<em>MLflow UI Dashboard</em>
 <img src="https://github.com/user-attachments/assets/1a23353e-d1cd-4bd0-87d5-b5d163a72fb7"><br>
-<em>Список запусков</em> 
+<em>Run List</em> 
 <img src="https://github.com/user-attachments/assets/1e46a9c3-15c5-4463-9481-e72939f3ac04"><br>
-<em>Логирование артефактов</em> 
+<em>Artifact Logging</em> 
 <img src="https://github.com/user-attachments/assets/b0ce9a32-1767-431c-be0e-22ca49c46228"><br>
 <em>Model Registry</em> 
 </div>
 
 
-#### Интерпретация решений (XAI)
-После обучения автоматически считаются SHAP-значения (TreeExplainer для бустингов, LinearExplainer для LogReg). Генерируются Summary Bar, Beeswarm и локальные Waterfall-графики для конкретных клиентов.
+#### Decision Interpretation (XAI)
+After training, SHAP values are automatically computed (TreeExplainer for boostings, LinearExplainer for LogReg). Summary Bar, Beeswarm, and local Waterfall charts are generated for specific clients.
 
 <div align="center">
 <img src="https://github.com/user-attachments/assets/829e180e-bab0-41cf-a42e-02f3684623cb" width="600"><br>
-<em>Объяснение прогноза для клиента с высоким риском</em>
+<em>Prediction Explanation for a High-Risk Client</em>
 </div>
 
 ---
 
-## Jupyter Notebooks: этапы исследования
+## Jupyter Notebooks: Research Stages
 
-Каждому этапу соответствует отдельный ноутбук в [notebooks/](notebooks/). Они служат интерактивной средой для экспериментов и используют функции из `src/`.
+Each stage corresponds to a dedicated notebook in [notebooks/](notebooks/). They serve as an interactive environment for experimentation and leverage functions from `src/`.
 
-| Ноутбук | Содержание |
+| Notebook | Content |
 |---|---|
-| [01_EDA.ipynb](notebooks/01_EDA.ipynb) | Загрузка данных, HTML-профили таблиц, анализ дисбаланса, пропусков и аномалий |
-| [02_feature_engineering.ipynb](notebooks/02_feature_engineering.ipynb) | Запуск пайплайна, анализ отобранных признаков и их корреляций |
-| [03_modelling.ipynb](notebooks/03_modelling.ipynb) | Сравнение моделей, HPO через Optuna, ROC/PR-кривые, оптимизация порога |
-| [04_interpretation.ipynb](notebooks/04_interpretation.ipynb) | Глобальный и локальный SHAP, сравнение логики разных моделей на одном клиенте |
+| [01_EDA.ipynb](notebooks/01_EDA.ipynb) | Data loading, HTML table profiling, analysis of imbalance, missing values, and anomalies |
+| [02_feature_engineering.ipynb](notebooks/02_feature_engineering.ipynb) | Pipeline execution, analysis of selected features and their correlations |
+| [03_modelling.ipynb](notebooks/03_modelling.ipynb) | Model comparison, HPO via Optuna, ROC/PR curves, threshold optimization |
+| [04_interpretation.ipynb](notebooks/04_interpretation.ipynb) | Global and local SHAP, comparison of logic across models on a single client |
 
 ---
 
-## Запуск
+## Getting Started
 
-### 1. Установка зависимостей
+### 1. Dependency Installation
 
 ```bash
 git clone https://github.com/mikhailvokhrameev/credit_scoring_ml_coursework.git
@@ -120,45 +120,45 @@ conda create -n credit-scoring python=3.10 -y && conda activate credit-scoring
 pip install -r requirements.txt
 ```
 
-### 2. Загрузка данных
+### 2. Data Downloading
 
-Данные берутся с соревнования Kaggle [Home Credit Default Risk](https://www.kaggle.com/c/home-credit-default-risk). Положите CSV-файлы в `data/raw/` (нужен настроенный `kaggle` API-токен):
+Data is retrieved from the Kaggle competition [Home Credit Default Risk](https://www.kaggle.com/c/home-credit-default-risk). Place CSV files in `data/raw/` (requires a configured `kaggle` API token):
 
 ```bash
 kaggle competitions download -c home-credit-default-risk -p data/
 unzip "data/*.zip" -d data/raw/
 ```
 
-### 3. Инженерия признаков
+### 3. Feature Engineering
 
-Полный пайплайн: предобработка → генерация признаков по всем таблицам → отбор через Ridge → сохранение в Parquet.
+Full pipeline: preprocessing → feature generation across all tables → feature selection via Ridge → saving to Parquet.
 
 ```bash
 python -m src.features.pipeline
 ```
 
-**На выходе** (в `data/processed/`): `train_features.parquet`, `test_features.parquet`, `selected_features.json`, `feature_importance.csv`. Эти файлы — вход для этапа обучения.
+**Output** (in `data/processed/`): `train_features.parquet`, `test_features.parquet`, `selected_features.json`, `feature_importance.csv`. These files serve as input for the training stage.
 
-> Для baseline-сравнения (только основная таблица): `python -m src.features.pipeline_base`.
+> For baseline comparison (main table only): `python -m src.features.pipeline_base`.
 
-### 4. Обучение модели
+### 4. Model Training
 
-Полный цикл обучения одной командой через CLI:
+Full training cycle with a single command via CLI:
 
 ```bash
 python -m src.models.train --model lgbm --trials 30 --device gpu
 ```
 
-Флаги:
+Flags:
 
-| Флаг | Значения | По умолчанию | Описание |
+| Flag | Values | Default | Description |
 |---|---|---|---|
-| `--model` | `logreg` / `lgbm` / `xgb` / `catboost` | — (обязательный) | Алгоритм для обучения |
-| `--trials` | int | `30` | Число итераций Optuna (`0` — пропустить HPO) |
-| `--folds` | int | `5` | Число фолдов финальной CV |
-| `--device` | `cpu` / `gpu` | `cpu` | Вычислительное устройство |
+| `--model` | `logreg` / `lgbm` / `xgb` / `catboost` | — (required) | Algorithm to train |
+| `--trials` | int | `30` | Number of Optuna trials (`0` — skip HPO) |
+| `--folds` | int | `5` | Number of final CV folds |
+| `--device` | `cpu` / `gpu` | `cpu` | Computing device |
 
-Можно запускать цепочкой для обучения всей группы моделей:
+Can be run sequentially to train the entire suite of models:
 
 ```bash
 python -m src.models.train --model logreg   --trials 30
@@ -167,39 +167,39 @@ python -m src.models.train --model xgb      --trials 30 --device gpu
 python -m src.models.train --model catboost --trials 30 --device gpu
 ```
 
-**На выходе** (в `artifacts/<model>_model/`): `model.joblib` (полная обёртка), `serving_model.joblib`, `metadata.json`, `xai/` (SHAP-графики и `shap_feature_importance.csv`), `inference/thresholds.json`. Всё параллельно логируется в MLflow.
+**Output** (in `artifacts/<model>_model/`): `model.joblib` (full wrapper), `serving_model.joblib`, `metadata.json`, `xai/` (SHAP plots and `shap_feature_importance.csv`), `inference/thresholds.json`. Everything is simultaneously logged to MLflow.
 
-> Быстрая «черновая» модель без HPO на одной таблице: `python -m src.models.train_base --model lgbm`.
+> Quick draft model without HPO on a single table: `python -m src.models.train_base --model lgbm`.
 
-### 5. Просмотр экспериментов в MLflow
+### 5. Viewing Experiments in MLflow
 
 ```bash
 mlflow ui --backend-store-uri sqlite:///mlflow.db
 ```
 
-Откройте http://127.0.0.1:5000 — сравнение моделей по ROC-AUC, вложенные запуски HPO/Final_Production, артефакты и Model Registry.
+Open http://127.0.0.1:5000 — model comparison by ROC-AUC, nested HPO/Final_Production runs, artifacts, and Model Registry.
 
-### 6. Интерпретация и экспорт
+### 6. Interpretation and Export
 
-Для глубокого SHAP-анализа используйте [04_interpretation.ipynb](notebooks/04_interpretation.ipynb).
-
----
-
-## Гипотезы
-
-В ходе исследования были сформулированы и статистически проверены пять гипотез, охватывающих природу данных, значимость признаков и эффективность методов обучения.
+For deep SHAP analysis, use [04_interpretation.ipynb](notebooks/04_interpretation.ipynb).
 
 ---
 
-#### Гипотеза 1 — возраст как предиктор риска
+## Hypotheses
 
-**Утверждение:** риск дефолта монотонно убывает с возрастом заёмщика — молодые клиенты объявляют дефолт систематически чаще, без «провалов» внутри возрастного диапазона.
+During the study, five hypotheses were formulated and statistically tested, covering data nature, feature importance, and training method efficiency.
 
-**Метод проверки:** обучающая выборка разбивается на 10 равных децилей по признаку `DAYS_BIRTH`; в каждом дециле вычисляется доля дефолтов; монотонность оценивается коэффициентом ранговой корреляции Спирмена.
+---
 
-**Критерий принятия:** ρ < −0.7 и p-value < 0.05.
+#### Hypothesis 1 — Age as a Risk Predictor
 
-**Результат: Подтверждена.** ρ = −1.00, p ≈ 0. Доля дефолтов 12.3% у самых молодых против 3.73% у самых возрастных, без единого нарушения монотонности.
+**Statement:** Default risk monotonically decreases with borrower age — younger clients systematically default more frequently, without dips within the age range.
+
+**Testing Method:** The training sample is split into 10 equal deciles based on the `DAYS_BIRTH` feature; the default rate is calculated in each decile; monotonicity is evaluated using Spearman's rank correlation coefficient.
+
+**Acceptance Criterion:** ρ < −0.7 and p-value < 0.05.
+
+**Result: Confirmed.** ρ = −1.00, p ≈ 0. Default rate is 12.3% for the youngest vs. 3.73% for the oldest, with zero violations of monotonicity.
 
 <div align="center">
 <img src="https://github.com/user-attachments/assets/e8f7ee0c-d518-43de-a95e-62a07d75ab83" width="600"><br>
@@ -207,27 +207,27 @@ mlflow ui --backend-store-uri sqlite:///mlflow.db
 
 ---
 
-#### Гипотеза 2 — пропуски как сигнал риска
+#### Hypothesis 2 — Missing Values as a Risk Signal
 
-**Утверждение:** дефолтные клиенты имеют значимо бо́льшую долю пропущенных значений в анкете, чем надёжные — то есть пропуски не случайны, а сами по себе являются сигналом кредитного риска.
+**Statement:** Defaulted clients have a significantly higher proportion of missing values in their application form than reliable clients — meaning missing values are not random and serve as a credit risk signal in themselves.
 
-**Метод проверки:** по каждой строке `application_train` вычисляется доля пропусков; группы дефолтных и надёжных клиентов сравниваются непараметрическим критерием Манна–Уитни.
+**Testing Method:** For each row in `application_train`, the proportion of missing values is calculated; default and reliable client groups are compared using the non-parametric Mann–Whitney U test.
 
-**Критерий принятия:** p-value < 0.05 и медианная доля пропусков у дефолтных выше, чем у надёжных.
+**Acceptance Criterion:** p-value < 0.05 and the median proportion of missing values is higher for defaulted clients than for reliable ones.
 
-**Результат: Подтверждена.** Медиана 39.7% у дефолтных vs 28.1% у надёжных; критерий Манна–Уитни p ≈ 0. Пропуски являются информативным предиктором и используются в виде бинарных флагов `is_missing`.
+**Result: Confirmed.** Median is 39.7% for defaulted vs. 28.1% for reliable clients; Mann–Whitney test p ≈ 0. Missing values are an informative predictor and are utilized as binary `is_missing` flags.
 
 ---
 
-#### Гипотеза 3 — внешние скоринговые баллы как главные предикторы
+#### Hypothesis 3 — External Credit Scores as Top Predictors
 
-**Утверждение:** признаки `EXT_SOURCE_1/2/3` являются наиболее информативными предикторами, поскольку концентрируют в себе готовую кредитную историю из сторонних источников.
+**Statement:** Features `EXT_SOURCE_1/2/3` are the most informative predictors, as they aggregate ready-made credit history from external sources.
 
-**Метод проверки:** оценка глобальной важности признаков через SHAP (`shap.TreeExplainer`); проверка, входят ли `EXT_SOURCE_1/2/3` или их производные в топ-5.
+**Testing Method:** Evaluation of global feature importance via SHAP (`shap.TreeExplainer`); checking whether `EXT_SOURCE_1/2/3` or their derivatives are in the top 5.
 
-**Критерий принятия:** `EXT_SOURCE_1/2/3` или их производные — в топ-5 SHAP feature importance финальной модели.
+**Acceptance Criterion:** `EXT_SOURCE_1/2/3` or their derivatives appear in the top 5 SHAP feature importances of the final model.
 
-**Результат: Подтверждена.** Производный признак `EXT_SOURCES_MEAN` (среднее трёх источников) занял **1-е место** в SHAP-рейтинге важности.
+**Result: Confirmed.** The derived feature `EXT_SOURCES_MEAN` (mean of the three sources) ranked **1st** in the SHAP importance ranking.
 
 <div align="center">
 <img src="https://github.com/user-attachments/assets/28f71ec9-a480-4446-8b30-efdcdd1a1841" width="500"><br>
@@ -236,29 +236,29 @@ mlflow ui --backend-store-uri sqlite:///mlflow.db
 
 ---
 
-#### Гипотеза 4 — ценность вспомогательных таблиц
+#### Hypothesis 4 — Value of Auxiliary Tables
 
-**Утверждение:** использование данных из вспомогательных таблиц (`bureau`, `previous_application` и др.) значимо повышает качество прогноза по сравнению с использованием только основной анкеты — за счёт учёта временно́й динамики поведения клиента.
+**Statement:** Using data from auxiliary tables (`bureau`, `previous_application`, etc.) significantly improves prediction quality compared to using only the main application form — by capturing the temporal dynamics of client behavior.
 
-**Метод проверки:** сравнение ROC-AUC двух моделей LightGBM: обученной на полном наборе из 7 таблиц (`lgbm_non_hpo`) и обученной только на `application_train` (`lgbm_base`).
+**Testing Method:** Comparison of ROC-AUC for two LightGBM models: trained on the full set of 7 tables (`lgbm_non_hpo`) and trained only on `application_train` (`lgbm_base`).
 
-**Критерий принятия:** прирост ROC-AUC ≥ 0.015.
+**Acceptance Criterion:** ROC-AUC gain ≥ 0.015.
 
-**Результат: Подтверждена.** ROC-AUC вырос с 0.766 (`lgbm_base`) до 0.786 (`lgbm_non_hpo`), прирост **+0.020** — превышает порог. Агрегированная история платежей содержит критически важный сигнал, невидимый в статичной анкете.
+**Result: Confirmed.** ROC-AUC increased from 0.766 (`lgbm_base`) to 0.786 (`lgbm_non_hpo`), a gain of **+0.020** — exceeding the threshold. Aggregated payment history contains critically important signal invisible in a static application form.
 
 ---
 
-#### Гипотеза 5 — эффективность байесовской оптимизации гиперпараметров
+#### Hypothesis 5 — Efficiency of Bayesian Hyperparameter Optimization
 
-**Утверждение:** автоматическая настройка гиперпараметров через Optuna эффективнее параметров по умолчанию за счёт специфики данных.
+**Statement:** Automated hyperparameter tuning via Optuna outperforms default parameters due to data specificity.
 
-**Метод проверки:** сравнение ROC-AUC моделей `non_hpo` (параметры по умолчанию) и `full` (30 итераций Optuna) на полном датасете для каждого алгоритма.
+**Testing Method:** Comparison of ROC-AUC between `non_hpo` (default parameters) and `full` (30 Optuna trials) models on the complete dataset for each algorithm.
 
-**Критерий принятия:** прирост ROC-AUC ≥ 0.005 хотя бы для одного из алгоритмов.
+**Acceptance Criterion:** ROC-AUC gain ≥ 0.005 for at least one algorithm.
 
-**Результат: Подтверждена частично.** Прирост зависит от алгоритма:
+**Result: Partially Confirmed.** The gain depends on the algorithm:
 
-| Алгоритм | ROC-AUC (Non-HPO) | ROC-AUC (Full) | Прирост |
+| Algorithm | ROC-AUC (Non-HPO) | ROC-AUC (Full) | Gain |
 |---|---|---|---|
 | XGBoost | 0.767 | 0.788 | **+0.021** |
 | CatBoost | 0.782 | 0.787 | **+0.005** |
@@ -266,45 +266,45 @@ mlflow ui --backend-store-uri sqlite:///mlflow.db
 
 ---
 
-## Результаты
+## Results
 
-Тестирование на реальных данных подтвердило преимущество ансамблевых методов над линейными. Лучший результат по чистому качеству — **`xgb_full`** (ROC-AUC = 0.788), лучший по совокупности качества и скорости — **CatBoost**.
+Testing on real data confirmed the advantage of ensemble methods over linear ones. The best result in terms of pure performance is **`xgb_full`** (ROC-AUC = 0.788), while the best balance of performance and speed is **CatBoost**.
 
-| Алгоритм | Версия | ROC-AUC | PR-AUC | Gini | Бизнес-потери |
+| Algorithm | Version | ROC-AUC | PR-AUC | Gini | Business Loss |
 |---|---|---|---|---|---|
-| **XGBoost** | Full | **0.788** | **0.281** | **0.576** | **149 582** |
-| CatBoost | Full | 0.787 | 0.278 | 0.573 | 150 005 |
-| LightGBM | Full | 0.786 | 0.278 | 0.571 | 150 627 |
-| LightGBM | Non-HPO | 0.786 | 0.277 | 0.572 | 150 029 |
-| LogReg | Full | 0.773 | 0.253 | 0.546 | 155 780 |
-| LogReg | Base *(baseline)* | 0.751 | 0.235 | 0.502 | 165 541 |
+| **XGBoost** | Full | **0.788** | **0.281** | **0.576** | **149,582** |
+| CatBoost | Full | 0.787 | 0.278 | 0.573 | 150,005 |
+| LightGBM | Full | 0.786 | 0.278 | 0.571 | 150,627 |
+| LightGBM | Non-HPO | 0.786 | 0.277 | 0.572 | 150,029 |
+| LogReg | Full | 0.773 | 0.253 | 0.546 | 155,780 |
+| LogReg | Base *(baseline)* | 0.751 | 0.235 | 0.502 | 165,541 |
 
 <div align="center">
 <img src="https://github.com/user-attachments/assets/ca246b5c-4787-44d0-801d-d5f5402801af" width="800"><br>
-<em>Сравнение cv_mean_roc_auc по всем моделям</em>
+<em>Comparison of cv_mean_roc_auc across all models</em>
 </div>
 
-**Ключевые выводы:**
+**Key Takeaways:**
 
-- **Обогащение данных важнее усложнения алгоритма.** Переход от одной таблицы к семи дал прирост ROC-AUC +0.020, тогда как переход от LogReg к XGBoost на полных данных — лишь +0.015.
-- **PR-AUC чувствительнее ROC-AUC** при дисбалансе классов: разброс 0.228–0.281 против тысячных долей в ROC-AUC, что делает её более показательной для задач с редкими событиями.
-- Все 5 гипотез подтверждены.
-
----
-
-## Планы по дальнейшему развитию
-
-- **Stacking-ансамбль**: мета-модель (LogReg) поверх прогнозов CatBoost + LightGBM + XGBoost для максимизации ROC-AUC.
-- **Конфигурация через внешние файлы** (YAML/JSON) для гибкой параметризации пайплайна без правки кода.
-- **Мониторинг дрейфа данных** для отслеживания деградации качества при смещении распределений (экономические кризисы).
-- **Калибровка вероятностей** и масштабирование скора в банковский диапазон [0, 1000].
+- **Data enrichment matters more than algorithm complexity.** Transitioning from one table to seven yielded a ROC-AUC gain of +0.020, whereas transitioning from LogReg to XGBoost on full data yielded only +0.015.
+- **PR-AUC is more sensitive than ROC-AUC** under class imbalance: range of 0.228–0.281 versus thousandths of a point in ROC-AUC, making it more informative for rare event tasks.
+- All 5 hypotheses were confirmed.
 
 ---
 
-## Связь с проектом LoanSight
+## Future Roadmap
 
-Модели, обученные в этом репозитории, легли в основу **[LoanSight](https://github.com/mikhailvokhrameev/loan_sight.git)** — веб-сервиса для экспериментов с ML-моделями оценки кредитного риска.
+- **Stacking Ensemble**: meta-model (LogReg) on top of predictions from CatBoost + LightGBM + XGBoost to maximize ROC-AUC.
+- **External File Configuration** (YAML/JSON) for flexible pipeline parameterization without code modification.
+- **Data Drift Monitoring** to track performance degradation during distribution shifts (economic crises).
+- **Probability Calibration** and score scaling to bank-standard range [0, 1000].
 
-LoanSight загружает выгруженные здесь артефакты, принимает данные клиента из базы, запускает выбранную модель и возвращает вероятность дефолта с человекочитаемой меткой риска (Low / Medium / High) и интерактивным **SHAP waterfall chart**. Сервис поддерживает сравнение двух моделей, ручное переопределение признаков («что если»), мультивалютность и историю экспериментов.
+---
 
-Таким образом, **этот проект — исследовательское и тренировочное ядро**, а LoanSight — продуктовая оболочка вокруг полученных моделей.
+## Connection to the LoanSight Project
+
+Models trained in this repository formed the core of **[LoanSight](https://github.com/mikhailvokhrameev/loan_sight.git)** — a web service for experimenting with credit risk assessment ML models.
+
+LoanSight loads artifacts exported here, retrieves client data from a database, runs the selected model, and returns default probability along with a human-readable risk label (Low / Medium / High) and an interactive **SHAP waterfall chart**. The service supports side-by-side comparison of two models, manual feature overriding ("what-if" analysis), multi-currency, and experiment history.
+
+Thus, **this repository is the research and training engine**, while LoanSight serves as the product frontend wrapper around the resulting models.
